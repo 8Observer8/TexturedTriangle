@@ -31,6 +31,32 @@ void Scene::initializeGL()
     m_textureUniform = m_program->uniformLocation( "textureUniform" );
     m_matrixUniform = m_program->uniformLocation( "matrix" );
 
+
+//    // Устанавливает режим проверки глубины пикселей
+//    glEnable( GL_DEPTH_TEST );
+
+//    // Отключает режим сглаживания цветов
+//    glShadeModel( GL_FLAT );
+
+//    // Устанавливаем режим, когда строятся только внешние поверхности
+//    glEnable( GL_CULL_FACE );
+
+//    glEnable( GL_TEXTURE_2D );
+
+
+    // Generate the textures
+    m_textureID = bindTexture( QPixmap( QString( ":/Textures/Stub.jpg" ) ), GL_TEXTURE_2D );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+
+
+    // Активизация массива вершин
+    //glEnableClientState( GL_VERTEX_ARRAY );
+
+    // Активизация массива текстурных координат
+    //glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+
 //    m_texture = new QOpenGLTexture( QOpenGLTexture::Target2D );
 //    m_texture->setData( QImage( ":Textures/Stub.jpg" ) );
 //    m_texture->setWrapMode( QOpenGLTexture::DirectionS, QOpenGLTexture::ClampToEdge );
@@ -46,11 +72,6 @@ void Scene::initializeGL()
 //        return;
 //    }
     //int id = m_texture->boundTextureId()
-
-    // Generate the textures
-    m_textureID = bindTexture( QPixmap( QString( ":/Textures/Stub.jpg" ) ), GL_TEXTURE_2D );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 }
 
 void Scene::paintGL()
