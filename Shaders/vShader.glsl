@@ -3,10 +3,10 @@
 in vec4 posAttr;
 uniform mat4 matrix;
 in vec2 textureAttr;
-out vec2 texture;
+out vec2 tex;
 
 void main()
 {
-    texture = textureAttr;
+    tex = textureAttr;
     gl_Position = matrix * posAttr;
 }
