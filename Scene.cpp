@@ -1,101 +1,128 @@
-#include <QDebug>
+#include <QImage>
+#include <QPainter>
 #include <QMatrix4x4>
-#include <QPixmap>
 #include "Scene.h"
-#include "glFunctions.h"
 
 Scene::Scene( QWidget *parent ) :
     QGLWidget( parent ),
-    m_program( 0 )
+    m_scale( 10.0f ),
+    m_angle( 0 ),
+    m_frames( 0 )
 {
+    setAttribute( Qt::WA_PaintOnScreen );
+    setAttribute( Qt::WA_NoSystemBackground );
+    setAutoBufferSwap( false );
+
+    connect( &m_timer, SIGNAL( timeout() ),
+             this, SLOT( slotUpdate() ) );
+    m_timer.start( 10 );
 }
 
-Scene::~Scene()
+void Scene::slotUpdate()
 {
-    delete m_texture;
+    ++m_angle;
+
+    if ( m_angle >= 360 )
+        m_angle = 0;
+
+    updateGL();
 }
 
 void Scene::initializeGL()
 {
-    glFunctions.initializeOpenGLFunctions();
-    m_program = new QOpenGLShaderProgram( this );
-    m_program->addShaderFromSourceFile( QOpenGLShader::Vertex, ":/Shaders/vShader.glsl" );
-    m_program->addShaderFromSourceFile( QOpenGLShader::Fragment, ":/Shaders/fShader.glsl" );
-    if ( !m_program->link() )
-    {
-        qWarning( "Error: unable to link a shader program" );
-        return;
-    }
-    m_posAttr = m_program->attributeLocation( "posAttr" );
-    m_texAttr = m_program->attributeLocation( "textureAttr" );
-    m_textureUniform = m_program->uniformLocation( "textureUniform" );
-    m_matrixUniform = m_program->uniformLocation( "matrix" );
+    glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
 
+    glGenTextures( 1, &m_texID );
+    m_texID = bindTexture( QImage( ":/Textures/Blocks.jpg" ) );
 
-//    // Устанавливает режим проверки глубины пикселей
-//    glEnable( GL_DEPTH_TEST );
+    QOpenGLShader vShader( QOpenGLShader::Vertex );
+    vShader.compileSourceFile( ":/Shaders/vShader.glsl" );
 
-//    // Отключает режим сглаживания цветов
-//    glShadeModel( GL_FLAT );
+    QOpenGLShader fShader( QOpenGLShader::Fragment );
+    fShader.compileSourceFile( ":/Shaders/fShader.glsl" );
 
-//    // Устанавливаем режим, когда строятся только внешние поверхности
-//    glEnable( GL_CULL_FACE );
+    m_program.addShader( &vShader );
+    m_program.addShader( &fShader );
+    m_program.link();
 
-//    glEnable( GL_TEXTURE_2D );
+    m_vertexAttr = m_program.attributeLocation( "vertex" );
+    m_texCoordAttr = m_program.attributeLocation( "texCoord" );
+    m_matrixUniform = m_program.uniformLocation( "matrix" );
+    m_texUniform = m_program.uniformLocation( "tex" );
 
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
-    // Generate the textures
-    m_textureID = bindTexture( QPixmap( QString( ":/Textures/Stub.jpg" ) ), GL_TEXTURE_2D );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-
-
-    // Активизация массива вершин
-    //glEnableClientState( GL_VERTEX_ARRAY );
-
-    // Активизация массива текстурных координат
-    //glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-
-
-//    m_texture = new QOpenGLTexture( QOpenGLTexture::Target2D );
-//    m_texture->setData( QImage( ":Textures/Stub.jpg" ) );
-//    m_texture->setWrapMode( QOpenGLTexture::DirectionS, QOpenGLTexture::ClampToEdge );
-//    m_texture->setWrapMode( QOpenGLTexture::DirectionT, QOpenGLTexture::ClampToEdge );
-
-//    m_texture->setMinificationFilter( QOpenGLTexture::LinearMipMapLinear );
-//    m_texture->setMagnificationFilter( QOpenGLTexture::Linear );
-//    m_texture->bind();
-//    m_textureID = QOpenGLTexture::boundTextureId( QOpenGLTexture::BindingTarget2D );
-//    if ( !m_texture->isBound() )
-//    {
-//        qWarning( "Error: unable to bound a texture" );
-//        return;
-//    }
-    //int id = m_texture->boundTextureId()
+    glEnable( GL_DEPTH_TEST );
 }
 
 void Scene::paintGL()
 {
+    QPainter painter;
+
+    painter.begin( this );
+    painter.beginNativePainting();
+
+    glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    if ( !m_program->bind() )
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+    QMatrix4x4 modelView;
+    modelView.perspective( 60.0f, ( GLfloat ) width() / ( GLfloat ) height() , 1.0f, 400.0f );
+    modelView.translate( 0.0f, 0.0f, -20.0f );
+    modelView.scale( m_scale );
+    modelView.rotate( m_angle, 0.0f, 1.0f, 0.0f );
+    if ( !m_program.bind() )
         return;
+    m_program.setUniformValue( m_matrixUniform, modelView );
 
-    QMatrix4x4 matrix;
-    matrix.perspective( 60.0f, 4.0f/3.0f, 0.1f, 100.0f );
-    matrix.translate( 0.0f, 0.0f, -2.0f );
-    m_program->setUniformValue( m_matrixUniform, matrix );
+    drawTriangle();
 
-    glFunctions.glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, m_textureID );
-    m_program->setUniformValue( m_textureUniform, 0 );
+    m_program.release();
 
-    m_triangle.draw( m_posAttr, m_texAttr );
+    painter.endNativePainting();
 
-    m_program->release();
+    if ( const int elapsed = m_time.elapsed() )
+    {
+        QString framesPerSecond;
+        framesPerSecond.setNum( m_frames / ( elapsed / 1000.0 ), 'f', 2 );
+        painter.setPen( Qt::white );
+        painter.drawText( 20, 40, framesPerSecond + " fps" );
+    }
+
+    painter.end();
+
+    swapBuffers();
+
+    if ( !( m_frames % 100 ) )
+    {
+        m_time.start();
+        m_frames = 0;
+    }
+//    m_fAngle += 1.0f;
+    ++m_frames;
 }
 
 void Scene::resizeGL( int w, int h )
 {
     glViewport( 0, 0, w, h );
+}
+
+void Scene::drawTriangle()
+{
+    glBindTexture( GL_TEXTURE_2D, m_texID );
+
+    m_program.setAttributeArray( m_vertexAttr, m_triangle.vertices.data(), 3 );
+    m_program.setAttributeArray( m_texCoordAttr, m_triangle.texCoords.data(), 2 );
+    m_program.setUniformValue( m_texUniform, 0 );
+
+    m_program.enableAttributeArray( m_vertexAttr );
+    m_program.enableAttributeArray( m_texCoordAttr );
+
+    glDrawArrays( GL_TRIANGLES, 0, 3 );
+
+    m_program.disableAttributeArray( m_vertexAttr );
+    m_program.disableAttributeArray( m_texCoordAttr );
 }

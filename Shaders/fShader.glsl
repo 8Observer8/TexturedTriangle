@@ -1,10 +1,9 @@
-#version 330 core
+varying highp vec4 texc;
+uniform sampler2D tex;
 
-in vec2 tex;
-out vec4 color;
-uniform sampler2D textureUniform;
-
-void main()
+void main( void )
 {
-    color = texture( textureUniform, tex );
+    highp vec3 color = texture2D( tex, texc.st ).rgb;
+    color = color * 0.2 + color * 0.8;
+    gl_FragColor = vec4( clamp( color, 0.0, 1.0 ), 1.0 );
 }

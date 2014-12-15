@@ -15,13 +15,11 @@ TEMPLATE = app
 SOURCES += main.cpp\
         Dialog.cpp \
     Scene.cpp \
-    Triangle.cpp \
-    glFunctions.cpp
+    Triangle.cpp
 
 HEADERS  += Dialog.h \
     Scene.h \
-    Triangle.h \
-    glFunctions.h
+    Triangle.h
 
 FORMS    += Dialog.ui
 

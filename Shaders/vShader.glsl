@@ -1,12 +1,10 @@
-#version 330 core
+attribute highp vec4 vertex;
+attribute highp vec4 texCoord;
+uniform mediump mat4 matrix;
+varying highp vec4 texc;
 
-in vec4 posAttr;
-uniform mat4 matrix;
-in vec2 textureAttr;
-out vec2 tex;
-
-void main()
+void main( void )
 {
-    tex = textureAttr;
-    gl_Position = matrix * posAttr;
+    gl_Position = matrix * vertex;
+    texc = texCoord;
 }
