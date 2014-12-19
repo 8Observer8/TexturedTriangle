@@ -1,17 +1,19 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
 #include <QTimer>
 #include <QTime>
 #include "Triangle.h"
 
-class Scene : public QGLWidget
+class Scene : public QOpenGLWidget
 {
     Q_OBJECT
 public:
     Scene( QWidget *parent = 0 );
+    ~Scene();
 
 private slots:
     void slotUpdate();
@@ -24,7 +26,6 @@ private:
     void drawTriangle();
 
     QOpenGLShaderProgram m_program;
-    GLuint m_texID;
     int m_vertexAttr;
     int m_texCoordAttr;
     int m_matrixUniform;
@@ -35,6 +36,7 @@ private:
     int m_angle;
     int m_frames;
     QTime m_time;
+    QOpenGLTexture *m_texture;
 };
 
 #endif // SCENE_H

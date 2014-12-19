@@ -4,18 +4,22 @@
 #include "Scene.h"
 
 Scene::Scene( QWidget *parent ) :
-    QGLWidget( parent ),
+    QOpenGLWidget( parent ),
     m_scale( 10.0f ),
     m_angle( 0 ),
-    m_frames( 0 )
+    m_frames( 0 ),
+    m_texture( 0 )
 {
-    setAttribute( Qt::WA_PaintOnScreen );
-    setAttribute( Qt::WA_NoSystemBackground );
-    setAutoBufferSwap( false );
-
     connect( &m_timer, SIGNAL( timeout() ),
              this, SLOT( slotUpdate() ) );
     m_timer.start( 10 );
+}
+
+Scene::~Scene()
+{
+    makeCurrent();
+    delete m_texture;
+    doneCurrent();
 }
 
 void Scene::slotUpdate()
@@ -25,15 +29,14 @@ void Scene::slotUpdate()
     if ( m_angle >= 360 )
         m_angle = 0;
 
-    updateGL();
+    update();
 }
 
 void Scene::initializeGL()
 {
     glClearColor( 0.1f, 0.1f, 0.2f, 1.0f );
 
-    glGenTextures( 1, &m_texID );
-    m_texID = bindTexture( QImage( ":/Textures/Blocks.jpg" ) );
+    m_texture = new QOpenGLTexture( QImage( ":/Textures/Blocks.jpg" ) );
 
     QOpenGLShader vShader( QOpenGLShader::Vertex );
     vShader.compileSourceFile( ":/Shaders/vShader.glsl" );
@@ -94,8 +97,6 @@ void Scene::paintGL()
 
     painter.end();
 
-    swapBuffers();
-
     if ( !( m_frames % 100 ) )
     {
         m_time.start();
@@ -112,7 +113,7 @@ void Scene::resizeGL( int w, int h )
 
 void Scene::drawTriangle()
 {
-    glBindTexture( GL_TEXTURE_2D, m_texID );
+    m_texture->bind();
 
     m_program.setAttributeArray( m_vertexAttr, m_triangle.vertices.data(), 3 );
     m_program.setAttributeArray( m_texCoordAttr, m_triangle.texCoords.data(), 2 );
